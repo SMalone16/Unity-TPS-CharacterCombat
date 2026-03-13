@@ -1,11 +1,14 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class CharacterInputHandler : MonoBehaviour
+public class CharacterInputHandler : MonoBehaviour, ICharacterInputProvider
 {
     public static CharacterInputHandler instance;
 
     public CharacterInputActions input;
+    private UnityCharacterInputSource inputSource;
+
+    public ICharacterInputSource InputSource => inputSource;
 
     private void Awake()
     {
@@ -19,18 +22,20 @@ public class CharacterInputHandler : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         input ??= new CharacterInputActions();
-        input.Enable();
+        inputSource = new UnityCharacterInputSource(input.CharacterControls);
+        inputSource.Enable();
     }
 
     private void OnEnable()
     {
         input ??= new CharacterInputActions();
-        input.Enable();
+        inputSource ??= new UnityCharacterInputSource(input.CharacterControls);
+        inputSource.Enable();
     }
 
     private void OnDisable()
     {
-        input?.Disable();
+        inputSource?.Disable();
     }
 }
 
@@ -54,6 +59,7 @@ public class CharacterInputActions
         public InputAction Roll { get; } = new InputAction("Roll", InputActionType.Button);
         public InputAction Jump { get; } = new InputAction("Jump", InputActionType.Button);
         public InputAction Attack { get; } = new InputAction("Attack", InputActionType.Button);
+        public InputAction Skill { get; } = new InputAction("Skill", InputActionType.Button);
 
         public CharacterControlsActions()
         {
@@ -75,6 +81,9 @@ public class CharacterInputActions
 
             Attack.AddBinding("<Mouse>/leftButton");
             Attack.AddBinding("<Gamepad>/rightShoulder");
+
+            Skill.AddBinding("<Keyboard>/q");
+            Skill.AddBinding("<Gamepad>/leftShoulder");
         }
 
         public void Enable()
@@ -84,6 +93,7 @@ public class CharacterInputActions
             Roll.Enable();
             Jump.Enable();
             Attack.Enable();
+            Skill.Enable();
         }
 
         public void Disable()
@@ -93,6 +103,7 @@ public class CharacterInputActions
             Roll.Disable();
             Jump.Disable();
             Attack.Disable();
+            Skill.Disable();
         }
     }
 }

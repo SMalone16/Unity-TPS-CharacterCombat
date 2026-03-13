@@ -18,4 +18,9 @@ public class HeroCombatConfig : ScriptableObject
 
     [Header("Damage")]
     public DashSetting kncockbackDash = new DashSetting();
+
+    [Header("Signature Power")]
+    public float signaturePowerRadius = 4f;
+    public int signaturePowerDamage = 2;
+    public float signaturePowerRecovery = 0.35f;
 }

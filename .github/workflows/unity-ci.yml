@@ -1,0 +1,48 @@
+name: Unity CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+
+jobs:
+  ci-preflight:
+    name: CI Preflight
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - name: Report CI runtime
+        run: |
+          echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=$FORCE_JAVASCRIPT_ACTIONS_TO_NODE24"
+          node --version
+
+  compile-check:
+    name: Compile Check (Unity)
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    if: ${{ secrets.UNITY_LICENSE != '' || secrets.UNITY_SERIAL != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unity - Test Runner (compile + edit mode)
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: 2022.3.21f1
+          testMode: EditMode
+          customParameters: -runTests -testPlatform EditMode -assemblyNames Character.EditModeTests -logFile -
+
+  compile-check-license-missing:
+    name: Compile Check (Unity license missing)
+    runs-on: ubuntu-latest
+    if: ${{ secrets.UNITY_LICENSE == '' && secrets.UNITY_SERIAL == '' }}
+    steps:
+      - name: Skip Unity compile check when no license secrets are configured
+        run: |
+          echo "::warning::Unity compile check skipped because UNITY_LICENSE/UNITY_SERIAL secrets are not configured."
+          echo "Configure UNITY_LICENSE (preferred) or UNITY_SERIAL + UNITY_EMAIL + UNITY_PASSWORD to enable compile checks."

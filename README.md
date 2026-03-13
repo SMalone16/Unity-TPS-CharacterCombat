@@ -39,3 +39,13 @@ This repository now includes a Unity project scaffold configured for **Unity 202
 - Visual feedback
 - Basic enemy AI/Manager (surround the player and wait for a chance to attack)
 <img src="https://github.com/MrAlvaroRamirez/ThirdPersonActionHSM/blob/main/gifs/combat.gif" width="60%"/>
+
+## Production Pipeline
+A 3-lane milestone pipeline is documented in `Docs/ThreeLanePipeline.md`:
+- Gameplay lane (Hero vertical slice)
+- Content lane (retargeting, VFX hooks, camera tuning)
+- Engineering lane (input abstraction, tests, CI, profiling budget)
+
+Milestones are tracked as Gate A (compile + null-ref safety), Gate B (encounter stability/FPS), and Gate C (second hero integration with shared state architecture).
+
+CI note: the Unity compile workflow requires either `UNITY_LICENSE` or `UNITY_SERIAL` GitHub secrets (plus Unity account secrets for serial activation). If missing, the workflow reports a warning and skips the Unity compile job instead of failing the pipeline.
