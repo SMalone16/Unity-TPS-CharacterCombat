@@ -213,10 +213,7 @@ public class PlayerStateMachine : MonoBehaviour
         Application.targetFrameRate = -1;
         QualitySettings.vSyncCount = 1;
 
-        //Assign references
-        characterController = GetComponent<CharacterController>();
-        particleHelper = GetComponent<ParticleHelper>();
-        actionCamera = FindObjectOfType<ActionCamera>();
+        EnsureRuntimeReferences();
 
         //setup state
         _states = new PlayerStateFactory(this);
@@ -225,6 +222,10 @@ public class PlayerStateMachine : MonoBehaviour
 
         //Character Input
         inputHandler = CharacterInputHandler.instance;
+        if (inputHandler == null)
+        {
+            inputHandler = new GameObject("CharacterInputHandler").AddComponent<CharacterInputHandler>();
+        }
 
         inputHandler.input.CharacterControls.Run.started += OnRun;
         inputHandler.input.CharacterControls.Run.canceled += OnRun;
@@ -235,6 +236,110 @@ public class PlayerStateMachine : MonoBehaviour
         inputHandler.input.CharacterControls.Attack.performed += context => OnAttack();
 
         setupJumpVariables();
+    }
+
+    private void EnsureRuntimeReferences()
+    {
+        characterController = GetComponent<CharacterController>();
+        particleHelper = GetComponent<ParticleHelper>();
+        if (particleHelper == null)
+        {
+            particleHelper = gameObject.AddComponent<ParticleHelper>();
+        }
+
+        actionCamera = FindObjectOfType<ActionCamera>();
+        if (actionCamera == null && Camera.main != null)
+        {
+            actionCamera = Camera.main.gameObject.AddComponent<ActionCamera>();
+        }
+
+        if (animator == null)
+        {
+            animator = GetComponentInChildren<Animator>();
+            if (animator == null)
+            {
+                animator = gameObject.AddComponent<Animator>();
+            }
+        }
+
+        if (thirdPersonCamera == null)
+        {
+            thirdPersonCamera = Camera.main != null ? Camera.main.transform : transform;
+        }
+
+        if (playerModel == null)
+        {
+            playerModel = transform;
+        }
+
+        if (lookTarget == null)
+        {
+            lookTarget = GetComponent<PlayerLookAtTransform>();
+            if (lookTarget == null)
+            {
+                lookTarget = gameObject.AddComponent<PlayerLookAtTransform>();
+            }
+        }
+
+        if (groundLayer == 0)
+        {
+            groundLayer = ~0;
+        }
+
+        EnsureDashArrays();
+        EnsureParticleArrays();
+    }
+
+    private void EnsureDashArrays()
+    {
+        if (comboDashes == null || comboDashes.Length < comboMax)
+        {
+            comboDashes = CreateDashArray(comboMax);
+        }
+
+        if (airComboDashes == null || airComboDashes.Length < airComboMax)
+        {
+            airComboDashes = CreateDashArray(airComboMax);
+        }
+
+        if (doubleJumpDash == null)
+        {
+            doubleJumpDash = new DashSetting();
+        }
+
+        if (sprintDash == null)
+        {
+            sprintDash = new DashSetting();
+        }
+
+        if (kncockbackDash == null)
+        {
+            kncockbackDash = new DashSetting();
+        }
+    }
+
+    private DashSetting[] CreateDashArray(int count)
+    {
+        DashSetting[] dashes = new DashSetting[Mathf.Max(1, count)];
+        for (int i = 0; i < dashes.Length; i++)
+        {
+            dashes[i] = new DashSetting();
+        }
+
+        return dashes;
+    }
+
+    private void EnsureParticleArrays()
+    {
+        if (comboParticles == null || comboParticles.Length < comboMax)
+        {
+            comboParticles = new ParticlePosition[Mathf.Max(1, comboMax)];
+        }
+
+        if (airComboParticles == null || airComboParticles.Length < airComboMax)
+        {
+            airComboParticles = new ParticlePosition[Mathf.Max(1, airComboMax)];
+        }
     }
     private void setupJumpVariables()
     {
