@@ -14,6 +14,7 @@ public class PlayerStateMachine : MonoBehaviour
     //Variables: referencias
     //Variables: referencias
     public Animator animator;
+    public RuntimeAnimatorController animatorController;
     public Transform thirdPersonCamera;
     public Transform playerModel;
     public PlayerLookAtTransform lookTarget;
@@ -29,14 +30,17 @@ public class PlayerStateMachine : MonoBehaviour
     [Space(20)]
 
     //Variables: movimiento
-    public float walkSpeed = 15.0f;
-    [SerializeField] private float rotationSpeed = 15.0f;
-    public float tiltSpeed = 15.0f;
-    public float runMultiplier = 3.0f;
+    [SerializeField] private HeroMovementConfig movementConfig;
+    [SerializeField] private HeroCombatConfig combatConfig;
+
+    public float walkSpeed => movementConfig != null ? movementConfig.walkSpeed : 15.0f;
+    private float rotationSpeed => movementConfig != null ? movementConfig.rotationSpeed : 15.0f;
+    public float tiltSpeed => movementConfig != null ? movementConfig.tiltSpeed : 15.0f;
+    public float runMultiplier => movementConfig != null ? movementConfig.runMultiplier : 3.0f;
     public float currentSpeed = 0;
     [HideInInspector] public float targetSpeed = 0;
-    [SerializeField] private float airResistance = 10;
-    [SerializeField] private float groundFriction = 40;
+    private float airResistance => movementConfig != null ? movementConfig.airResistance : 10f;
+    private float groundFriction => movementConfig != null ? movementConfig.groundFriction : 40f;
 
     //Variables: input del jugador
     [HideInInspector] public Vector2 rawMovementInput = Vector2.zero;
@@ -53,7 +57,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     //Easing
     [HideInInspector] public float velocity2 = 0;
-    [SerializeField] private float easeFactor = 0.2f;
+    private float easeFactor => movementConfig != null ? movementConfig.easeFactor : 0.2f;
 
     //Estados
     public bool isSkilling = false; //(replacement for ??)
@@ -74,10 +78,11 @@ public class PlayerStateMachine : MonoBehaviour
 
     //Salto
     [HideInInspector] public float initialJumpVelocity;
-    [SerializeField] private float maxJumpHeight = 15.0f;
-    [SerializeField] private float maxJumpTime = 2f;
+    private float maxJumpHeight => movementConfig != null ? movementConfig.maxJumpHeight : 15.0f;
+    private float maxJumpTime => movementConfig != null ? movementConfig.maxJumpTime : 2f;
     [HideInInspector] public bool canDoubleJump = true;
-    public DashSetting doubleJumpDash;
+    private DashSetting fallbackDoubleJumpDash = new DashSetting();
+    public DashSetting doubleJumpDash => movementConfig != null && movementConfig.doubleJumpDash != null ? movementConfig.doubleJumpDash : fallbackDoubleJumpDash;
     private bool m_isChargingBoost = false;
     public bool isChargingBoost {
         get{
@@ -96,7 +101,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     //Gravedad
     [HideInInspector] public float gravity = -9.8f;
-    public float groundedGravity = -.05f;
+    public float groundedGravity => movementConfig != null ? movementConfig.groundedGravity : -.05f;
 
     //Grounded
     public Vector3 distanceToGround;
@@ -108,7 +113,8 @@ public class PlayerStateMachine : MonoBehaviour
     [Space(20)]
 
     //Dash/Roll
-    public DashSetting sprintDash = new DashSetting();
+    private DashSetting fallbackSprintDash = new DashSetting();
+    public DashSetting sprintDash => movementConfig != null && movementConfig.sprintDash != null ? movementConfig.sprintDash : fallbackSprintDash;
     private IEnumerator dashCoroutine;
     public ParticleFX DashParticle;
     
@@ -117,10 +123,10 @@ public class PlayerStateMachine : MonoBehaviour
     [Space(20)]
 
     //Wall Run
-    public float wallRunSpeedMultiplier = 1.3f;  
-    public float wallRunMinDistance = 10f;
-    public float wallRunGravityMultiplier = 0.04f;
-    [SerializeField] private float wallRunCooldown = 0.6f;
+    public float wallRunSpeedMultiplier => movementConfig != null ? movementConfig.wallRunSpeedMultiplier : 1.3f;
+    public float wallRunMinDistance => movementConfig != null ? movementConfig.wallRunMinDistance : 10f;
+    public float wallRunGravityMultiplier => movementConfig != null ? movementConfig.wallRunGravityMultiplier : 0.04f;
+    private float wallRunCooldown => movementConfig != null ? movementConfig.wallRunCooldown : 0.6f;
     private IEnumerator activateWallRun;
     [HideInInspector] public bool leftWallColliding = false, rightWallColliding = false;
     public bool canWallRun = true;
@@ -165,25 +171,28 @@ public class PlayerStateMachine : MonoBehaviour
 
     //Combate
     public int currentCombo = 0;
-    public int comboMax = 3;
+    public int comboMax => combatConfig != null ? Mathf.Max(1, combatConfig.comboMax) : 3;
     public int currentAirCombo = 0;
-    public int airComboMax = 2;
+    public int airComboMax => combatConfig != null ? Mathf.Max(1, combatConfig.airComboMax) : 2;
     [HideInInspector] public bool canAttack = true;
     [HideInInspector] public bool airComboSeekingRestart = false;
-    public DashSetting[] comboDashes;
-    public DashSetting[] airComboDashes;
-    public float enemyBoundsOffset;
-    public Vector3 enemyTargetBoxExtents;
-    public float airHitBoxVerticalValue = 4;
+    private DashSetting[] comboDashesCache;
+    private DashSetting[] airComboDashesCache;
+    public DashSetting[] comboDashes => comboDashesCache;
+    public DashSetting[] airComboDashes => airComboDashesCache;
+    public float enemyBoundsOffset => combatConfig != null ? combatConfig.enemyBoundsOffset : 0f;
+    public Vector3 enemyTargetBoxExtents => combatConfig != null ? combatConfig.enemyTargetBoxExtents : Vector3.zero;
+    public float airHitBoxVerticalValue => combatConfig != null ? combatConfig.airHitBoxVerticalValue : 4f;
     public LayerMask enemyLayerMask;
-    public float enemyTargetOffset = 2;
+    public float enemyTargetOffset => combatConfig != null ? combatConfig.enemyTargetOffset : 2f;
     [HideInInspector] public IEnumerator comboReset;
     [HideInInspector] public Tween attackTween;
-    public float longAttackDistance = 1;
+    public float longAttackDistance => combatConfig != null ? combatConfig.longAttackDistance : 1f;
     public EnemyBase enemyTarget;
     public LayerMask collisionLayer;
     [HideInInspector] public bool justHit = false;
-    public DashSetting kncockbackDash;
+    private DashSetting fallbackKnockbackDash = new DashSetting();
+    public DashSetting kncockbackDash => combatConfig != null && combatConfig.kncockbackDash != null ? combatConfig.kncockbackDash : fallbackKnockbackDash;
 
     [Space(20)]
     [Header("FX")]
@@ -201,6 +210,17 @@ public class PlayerStateMachine : MonoBehaviour
     PlayerStateFactory _states;
 
     #endregion
+
+    private void OnValidate()
+    {
+        EnsureDashArrays();
+        EnsureParticleArrays();
+
+        if (movementConfig != null)
+        {
+            gravity = movementConfig.gravity;
+        }
+    }
 
     #region Initialization
     private void Start()
@@ -286,44 +306,36 @@ public class PlayerStateMachine : MonoBehaviour
             groundLayer = ~0;
         }
 
+        if (animatorController != null)
+        {
+            animator.runtimeAnimatorController = animatorController;
+        }
+
         EnsureDashArrays();
         EnsureParticleArrays();
     }
 
     private void EnsureDashArrays()
     {
-        if (comboDashes == null || comboDashes.Length < comboMax)
-        {
-            comboDashes = CreateDashArray(comboMax);
-        }
-
-        if (airComboDashes == null || airComboDashes.Length < airComboMax)
-        {
-            airComboDashes = CreateDashArray(airComboMax);
-        }
-
-        if (doubleJumpDash == null)
-        {
-            doubleJumpDash = new DashSetting();
-        }
-
-        if (sprintDash == null)
-        {
-            sprintDash = new DashSetting();
-        }
-
-        if (kncockbackDash == null)
-        {
-            kncockbackDash = new DashSetting();
-        }
+        comboDashesCache = EnsureDashArray(combatConfig != null ? combatConfig.comboDashes : null, comboMax);
+        airComboDashesCache = EnsureDashArray(combatConfig != null ? combatConfig.airComboDashes : null, airComboMax);
     }
 
-    private DashSetting[] CreateDashArray(int count)
+    private DashSetting[] EnsureDashArray(DashSetting[] source, int count)
     {
-        DashSetting[] dashes = new DashSetting[Mathf.Max(1, count)];
-        for (int i = 0; i < dashes.Length; i++)
+        int size = Mathf.Max(1, count);
+        DashSetting[] dashes = new DashSetting[size];
+
+        for (int i = 0; i < size; i++)
         {
-            dashes[i] = new DashSetting();
+            if (source != null && i < source.Length && source[i] != null)
+            {
+                dashes[i] = source[i];
+            }
+            else
+            {
+                dashes[i] = new DashSetting();
+            }
         }
 
         return dashes;
@@ -343,8 +355,12 @@ public class PlayerStateMachine : MonoBehaviour
     }
     private void setupJumpVariables()
     {
+        if (movementConfig != null)
+        {
+            gravity = movementConfig.gravity;
+        }
+
         float timeToApex = maxJumpTime / 2;
-        gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToApex, 2);
         initialJumpVelocity = (2 * maxJumpHeight) / timeToApex;
     }
 
