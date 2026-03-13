@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 27
+  productGUID: 06cace6c7f5944bda4f8f3f8b5fd379e
+  companyName: Prototype
+  productName: Unity-TPS-CharacterCombat
+  defaultScreenWidth: 1920
+  defaultScreenHeight: 1080
+  m_ActiveColorSpace: 1
+--- !u!13 &2
+InputManager:
+  m_ObjectHideFlags: 0
