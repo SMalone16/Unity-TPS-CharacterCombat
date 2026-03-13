@@ -1,0 +1,23 @@
+name: Unity CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+
+jobs:
+  compile-check:
+    name: Compile Check (Unity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unity - Test Runner (compile + edit mode)
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: 2022.3.21f1
+          testMode: EditMode
+          customParameters: -runTests -testPlatform EditMode -assemblyNames Character.EditModeTests -logFile -

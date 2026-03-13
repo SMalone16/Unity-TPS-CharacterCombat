@@ -24,6 +24,7 @@ public class PlayerStateMachine : MonoBehaviour
     public ParticleSystem windParticles;
     [HideInInspector] public Vector3 characterCenter;
     private CharacterInputHandler inputHandler;
+    private ICharacterInputSource inputSource;
 
     [Space(20)]
     [Header("Movement")]
@@ -188,6 +189,9 @@ public class PlayerStateMachine : MonoBehaviour
     [HideInInspector] public IEnumerator comboReset;
     [HideInInspector] public Tween attackTween;
     public float longAttackDistance => combatConfig != null ? combatConfig.longAttackDistance : 1f;
+    public float signaturePowerRadius => combatConfig != null ? combatConfig.signaturePowerRadius : 4f;
+    public int signaturePowerDamage => combatConfig != null ? combatConfig.signaturePowerDamage : 2;
+    public float signaturePowerRecovery => combatConfig != null ? combatConfig.signaturePowerRecovery : 0.35f;
     public EnemyBase enemyTarget;
     public LayerMask collisionLayer;
     [HideInInspector] public bool justHit = false;
@@ -247,15 +251,49 @@ public class PlayerStateMachine : MonoBehaviour
             inputHandler = new GameObject("CharacterInputHandler").AddComponent<CharacterInputHandler>();
         }
 
-        inputHandler.input.CharacterControls.Run.started += OnRun;
-        inputHandler.input.CharacterControls.Run.canceled += OnRun;
-        inputHandler.input.CharacterControls.Roll.performed += context => OnDash();
-        inputHandler.input.CharacterControls.Jump.started += OnJump;
-        inputHandler.input.CharacterControls.Jump.started += context => OnDoubleJump();
-        inputHandler.input.CharacterControls.Jump.canceled += OnJump;
-        inputHandler.input.CharacterControls.Attack.performed += context => OnAttack();
+        inputSource = inputHandler.InputSource;
+        BindInput();
 
         setupJumpVariables();
+    }
+
+    private void OnDestroy()
+    {
+        UnbindInput();
+    }
+
+    private void BindInput()
+    {
+        if (inputSource == null)
+        {
+            return;
+        }
+
+        inputSource.Run.started += OnRun;
+        inputSource.Run.canceled += OnRun;
+        inputSource.Roll.performed += OnDashPerformed;
+        inputSource.Jump.started += OnJump;
+        inputSource.Jump.started += OnDoubleJumpPerformed;
+        inputSource.Jump.canceled += OnJump;
+        inputSource.Attack.performed += OnAttackPerformed;
+        inputSource.Skill.performed += OnSkillPerformed;
+    }
+
+    private void UnbindInput()
+    {
+        if (inputSource == null)
+        {
+            return;
+        }
+
+        inputSource.Run.started -= OnRun;
+        inputSource.Run.canceled -= OnRun;
+        inputSource.Roll.performed -= OnDashPerformed;
+        inputSource.Jump.started -= OnJump;
+        inputSource.Jump.started -= OnDoubleJumpPerformed;
+        inputSource.Jump.canceled -= OnJump;
+        inputSource.Attack.performed -= OnAttackPerformed;
+        inputSource.Skill.performed -= OnSkillPerformed;
     }
 
     private void EnsureRuntimeReferences()
@@ -377,7 +415,7 @@ public class PlayerStateMachine : MonoBehaviour
         animator.SetBool("isFalling", !isFloorBelow);
 
         //input
-        OnMovementInput(inputHandler.input.CharacterControls.Move.ReadValue<Vector2>());
+        OnMovementInput(inputSource != null ? inputSource.Move.ReadValue<Vector2>() : Vector2.zero);
         //Set Character center point
         characterCenter = transform.position + (Vector3.up * 1.04f);
         //Apply rotacion
@@ -445,6 +483,26 @@ public class PlayerStateMachine : MonoBehaviour
         isRunPressed = context.ReadValueAsButton();
     }
 
+    private void OnDashPerformed(InputAction.CallbackContext context)
+    {
+        OnDash();
+    }
+
+    private void OnDoubleJumpPerformed(InputAction.CallbackContext context)
+    {
+        OnDoubleJump();
+    }
+
+    private void OnAttackPerformed(InputAction.CallbackContext context)
+    {
+        OnAttack();
+    }
+
+    private void OnSkillPerformed(InputAction.CallbackContext context)
+    {
+        OnSkill();
+    }
+
     //Jump
     private void OnJump(InputAction.CallbackContext context)
     {
@@ -494,6 +552,11 @@ public class PlayerStateMachine : MonoBehaviour
     private void OnAttack()
     {
         CurrentState.Trigger("attack");
+    }
+
+    private void OnSkill()
+    {
+        CurrentState.Trigger("skill");
     }
 
     #endregion
@@ -573,7 +636,6 @@ public class PlayerStateMachine : MonoBehaviour
 
         QuickRotation(new Vector3(lastMovementInput.x, 0, lastMovementInput.y));
 
-        //Jump
         if (direction.y != 0)
             currentMovement.y = direction.y;
 

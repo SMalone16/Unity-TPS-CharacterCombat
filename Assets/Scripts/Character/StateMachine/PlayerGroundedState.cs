@@ -27,12 +27,12 @@ public class PlayerGroundedState : PlayerBaseState
         {
             _ctx.currentMovement.x = _ctx.currentMovementInput.x * _ctx.currentSpeed;
             _ctx.currentMovement.z = _ctx.currentMovementInput.y * _ctx.currentSpeed;
-        } else 
+        } else
         {
             _ctx.currentMovement.x = _ctx.transform.forward.x * _ctx.currentSpeed;
             _ctx.currentMovement.z = _ctx.transform.forward.z * _ctx.currentSpeed;
         }
-        
+
         CheckSlope();
 
         HandleAnimation();
@@ -77,6 +77,12 @@ public class PlayerGroundedState : PlayerBaseState
         {
             if (_ctx.currentAirCombo < _ctx.airComboMax)
                 SwitchState(_factory.Attack());
+            return;
+        }
+
+        if (trigger == "skill")
+        {
+            SwitchState(_factory.Skill());
         }
     }
     public override void Trigger(int damage, Vector3 position)
